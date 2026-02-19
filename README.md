@@ -9,6 +9,8 @@ MCP (Model Context Protocol) 浏览器自动化工具包，提供网页信息获
 - 🎯 **元素操作**：点击、填写表单等页面交互操作
 - ⏱️ **智能等待**：等待特定元素出现
 - 🔍 **信息提取**：提取页面中的链接、图片等结构化信息
+- 🔄 **双协议支持**：支持 stdio 和 SSE 两种传输协议
+- ⚡ **实时通信**：通过 SSE 实现服务器推送和双向通信
 
 ## 安装
 
@@ -26,8 +28,33 @@ playwright install
 
 ### 2. 运行 MCP 服务器
 
+#### 使用 SSE 协议（默认）
 ```bash
 mcp-browser-tools
+```
+
+#### 使用 stdio 协议
+```bash
+# 设置环境变量
+export MCP_TRANSPORT_MODE=stdio
+mcp-browser-tools
+```
+
+或者通过配置文件：
+```python
+from mcp_browser_tools.config import ServerConfig
+
+# 使用 SSE（默认）
+config = ServerConfig(
+    transport_mode="sse",
+    sse_host="localhost",
+    sse_port=8000
+)
+
+# 使用 stdio
+config = ServerConfig(
+    transport_mode="stdio"
+)
 ```
 
 ### 3. 使用示例
@@ -171,6 +198,65 @@ async def main():
 asyncio.run(main())
 ```
 
+### SSE 客户端连接
+
+```python
+import aiohttp
+import asyncio
+
+async def connect_sse():
+    # 连接到 SSE 端点
+    async with aiohttp.ClientSession() as session:
+        async with session.get("http://localhost:8000/mcp-sse") as response:
+            async for line in response.content:
+                line = line.decode('utf-8').strip()
+                if line.startswith("data: "):
+                    data = json.loads(line[6:])
+                    print(f"服务器事件: {data}")
+
+asyncio.run(connect_sse())
+```
+
+### 使用 SSE 双向通信
+
+```python
+import asyncio
+from sse_client_example import MCPClient
+
+async def main():
+    client = MCPClient("http://localhost:8000")
+
+    await client.connect()
+
+    # 获取工具列表
+    await client.list_tools()
+
+    # 调用工具
+    await client.call_tool("navigate_to_url", {
+        "url": "https://example.com"
+    })
+
+    await client.disconnect()
+
+asyncio.run(main())
+```
+
+### 配置传输模式
+
+```python
+from mcp_browser_tools.config import ServerConfig
+
+# 创建 SSE 配置
+config = ServerConfig(
+    transport_mode="sse",
+    sse_host="0.0.0.0",
+    sse_port=8000
+)
+
+# 运行 SSE 服务器
+# await main()
+```
+
 ### 执行 JavaScript
 
 ```python
@@ -281,7 +367,15 @@ MIT License
 
 ## 更新日志
 
+### v0.2.2
+- 默认使用 SSE (Server-Sent Events) 传输协议
+
 ### v0.2.1
+- 添加了 SSE (Server-Sent Events) 传输协议支持
+- 实现了双协议架构：stdio 和 SSE 两种传输模式
+- **默认使用 SSE 传输协议**，提供更好的实时通信体验
+- 新增 SSE 服务器端点和 WebSocket 双向通信
+- 提供了完整的 SSE 客户端示例
 - 修复了入口点配置问题，解决了 uvx 命令的协程警告
 - 更新了依赖配置，将已弃用的 `tool.uv.dev-dependencies` 替换为 `dependency-groups.dev`
 - 改进了 UTF-8 编码支持，确保所有文件正确使用 UTF-8 编码

@@ -361,9 +361,20 @@ async def list_tools(request: ListToolsRequest) -> ListToolsResult:
 
 
 async def main():
-    async with stdio_server() as (read_stream, write_stream):
-        await server.run(
-            read_stream,
-            write_stream,
-            {"server_name": "mcp-browser-tools", "server_version": "0.1.0"}
-        )
+    from .config import ServerConfig
+    from .transport import create_transport
+
+    # 加载配置
+    config = ServerConfig.default()
+
+    # 创建传输层
+    transport = create_transport(config)
+
+    # 运行服务器
+    await transport.run(
+        server,
+        {
+            "server_name": config.server_name,
+            "server_version": config.server_version
+        }
+    )

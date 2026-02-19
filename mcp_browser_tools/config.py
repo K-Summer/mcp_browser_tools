@@ -10,9 +10,12 @@ from pathlib import Path
 class ServerConfig:
     """服务器配置"""
     server_name: str = "mcp-browser-tools"
-    server_version: str = "0.1.0"
+    server_version: str = "0.2.1"
     log_level: str = "INFO"
     log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    transport_mode: str = "sse"  # 传输模式: "stdio" 或 "sse"
+    sse_host: str = "localhost"
+    sse_port: int = 8000
 
     @classmethod
     def default(cls) -> "ServerConfig":
