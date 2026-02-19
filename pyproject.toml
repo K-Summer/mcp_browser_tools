@@ -1,6 +1,6 @@
 [project]
 name = "mcp-browser-tools"
-version = "0.2.2"
+version = "0.2.3"
 description = "MCP服务器提供浏览器自动化功能，帮助AI模型获取网页信息"
 readme = "README.md"
 requires-python = ">=3.12"

@@ -367,6 +367,11 @@ async def main():
     # 加载配置
     config = ServerConfig.default()
 
+    # 输出启动信息
+    print("\n" + "="*50)
+    print("🚀 MCP Browser Tools 启动中...")
+    print("="*50)
+
     # 创建传输层
     transport = create_transport(config)
 

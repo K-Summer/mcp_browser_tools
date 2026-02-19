@@ -28,9 +28,33 @@ class TransportBase(ABC):
 class StdioTransport(TransportBase):
     """_stdio 传输层（保持原有功能）"""
 
+    def __init__(self, config: ServerConfig = None):
+        self.config = config
+
     async def run(self, server: Server, server_info: Dict[str, Any]):
         """运行 stdio 传输"""
         from mcp.server.stdio import stdio_server
+
+        # 输出配置信息
+        if self.config:
+            print("\n" + "="*50)
+            print("MCP Browser Tools 配置信息")
+            print("="*50)
+            print(f"服务器名称: {self.config.server_name}")
+            print(f"服务器版本: {self.config.server_version}")
+            print(f"传输模式: {self.config.transport_mode}")
+            print(f"日志级别: {self.config.log_level}")
+            print("="*50)
+            print("\n下次启动时可以使用以下配置:")
+            print(f"export MCP_SERVER_NAME='{self.config.server_name}'")
+            print(f"export MCP_SERVER_VERSION='{self.config.server_version}'")
+            print(f"export MCP_TRANSPORT_MODE='{self.config.transport_mode}'")
+            print(f"export MCP_LOG_LEVEL='{self.config.log_level}'")
+            print("="*50 + "\n")
+
+        print("✅ 使用 stdio 传输模式")
+        print("📡 通过标准输入输出进行通信")
+        print("\n按 Ctrl+C 停止服务器\n")
 
         async with stdio_server() as (read_stream, write_stream):
             await server.run(read_stream, write_stream, server_info)
@@ -50,36 +74,21 @@ class SSETransport(TransportBase):
 
     async def run(self, server: Server, server_info: Dict[str, Any]):
         """运行 SSE 传输"""
-        from .sse_server import run_sse_server, sse_manager
+        from .sse_server import run_sse_server, sse_manager, set_mcp_server
 
         self.is_running = True
 
+        # 设置 MCP 服务器实例
+        set_mcp_server(server)
+
         # 启动 SSE 服务器
-        self.server_task = asyncio.create_task(
-            run_sse_server(self.config)
-        )
+        self.server_thread = await run_sse_server(self.config)
 
-        # 定期广播服务器状态
-        async def broadcast_status():
-            while self.is_running:
-                try:
-                    status_message = {
-                        "type": "server_status",
-                        "data": {
-                            "status": "running",
-                            "server_name": server_info.get("server_name"),
-                            "server_version": server_info.get("server_version"),
-                            "active_connections": len(sse_manager.active_connections)
-                        }
-                    }
-                    await sse_manager.broadcast(status_message)
-                    await asyncio.sleep(10)
-                except Exception as e:
-                    print(f"广播状态失败: {e}")
-                    break
-
-        # 启动状态广播任务
-        status_task = asyncio.create_task(broadcast_status())
+        print("MCP 服务器已通过 SSE 传输层启动")
+        print("等待客户端连接...")
+        print("客户端可以通过以下方式连接:")
+        print(f"  1. WebSocket: ws://{self.config.sse_host}:{self.config.sse_port}/ws")
+        print(f"  2. SSE 端点: http://{self.config.sse_host}:{self.config.sse_port}/mcp-sse")
 
         # 等待停止信号
         try:
@@ -87,25 +96,19 @@ class SSETransport(TransportBase):
                 await asyncio.sleep(1)
         except asyncio.CancelledError:
             self.is_running = False
-            status_task.cancel()
             await self.stop()
 
     async def stop(self):
         """停止 SSE 传输"""
         self.is_running = False
-        if self.server_task:
-            self.server_task.cancel()
-            try:
-                await self.server_task
-            except asyncio.CancelledError:
-                pass
+        # 服务器线程是守护线程，主程序退出时会自动结束
 
 
 def create_transport(config: ServerConfig) -> TransportBase:
     """根据配置创建传输层"""
 
     if config.transport_mode == "stdio":
-        return StdioTransport()
+        return StdioTransport(config)
     elif config.transport_mode == "sse":
         return SSETransport(config)
     else:

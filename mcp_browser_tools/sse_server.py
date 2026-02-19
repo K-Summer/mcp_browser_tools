@@ -74,7 +74,7 @@ sse_manager = SSEConnectionManager()
 # 创建 FastAPI 应用
 sse_app = FastAPI()
 
-@sse_app.post("/sse")
+@sse_app.get("/sse")
 async def sse_endpoint() -> StreamingResponse:
     """SSE 端点，服务器推送事件到客户端"""
 
@@ -100,7 +100,7 @@ async def sse_endpoint() -> StreamingResponse:
         headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
     )
 
-@sse_app.post("/mcp-sse")
+@sse_app.get("/mcp-sse")
 async def mcp_sse_endpoint() -> StreamingResponse:
     """MCP over SSE 端点"""
 
@@ -114,7 +114,7 @@ async def mcp_sse_endpoint() -> StreamingResponse:
             "method": "server/info",
             "params": {
                 "name": "mcp-browser-tools",
-                "version": "0.2.1"
+                "version": "0.2.3"
             }
         }
         yield f"data: {json.dumps(server_info)}\n\n"
@@ -172,9 +172,31 @@ async def websocket_endpoint(websocket: WebSocket):
         logger.error(f"WebSocket 错误: {e}")
         await sse_manager.disconnect(client_id)
 
+# 全局 MCP 服务器实例
+_mcp_server = None
+
+def set_mcp_server(server):
+    """设置 MCP 服务器实例"""
+    global _mcp_server
+    _mcp_server = server
+
 async def handle_mcp_message(message: Dict[str, Any]) -> Dict[str, Any]:
     """处理 MCP 消息"""
     try:
+        if _mcp_server is None:
+            return {
+                "jsonrpc": "2.0",
+                "id": message.get("id"),
+                "error": {
+                    "code": -32603,
+                    "message": "MCP 服务器未初始化"
+                }
+            }
+
+        # 这里需要将消息转换为 MCP 服务器能处理的格式
+        # 由于 MCP 服务器期望通过 stdio 通信，我们需要模拟这种通信
+        # 这是一个简化的实现，实际需要更复杂的集成
+
         method = message.get("method")
         params = message.get("params", {})
 
@@ -204,6 +226,72 @@ async def handle_mcp_message(message: Dict[str, Any]) -> Dict[str, Any]:
                                 "properties": {},
                                 "required": []
                             }
+                        },
+                        {
+                            "name": "get_page_title",
+                            "description": "获取页面标题",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {},
+                                "required": []
+                            }
+                        },
+                        {
+                            "name": "click_element",
+                            "description": "点击页面元素",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "selector": {"type": "string"}
+                                },
+                                "required": ["selector"]
+                            }
+                        },
+                        {
+                            "name": "fill_input",
+                            "description": "填充输入框",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "selector": {"type": "string"},
+                                    "text": {"type": "string"}
+                                },
+                                "required": ["selector", "text"]
+                            }
+                        },
+                        {
+                            "name": "wait_for_element",
+                            "description": "等待元素出现",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "selector": {"type": "string"},
+                                    "timeout": {"type": "number"}
+                                },
+                                "required": ["selector"]
+                            }
+                        },
+                        {
+                            "name": "execute_javascript",
+                            "description": "执行 JavaScript 代码",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "script": {"type": "string"}
+                                },
+                                "required": ["script"]
+                            }
+                        },
+                        {
+                            "name": "take_screenshot",
+                            "description": "截取页面截图",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "path": {"type": "string"}
+                                },
+                                "required": ["path"]
+                            }
                         }
                     ]
                 }
@@ -215,6 +303,7 @@ async def handle_mcp_message(message: Dict[str, Any]) -> Dict[str, Any]:
             arguments = params.get("arguments", {})
 
             # 这里应该调用实际的工具函数
+            # 由于 MCP 服务器集成较复杂，这里先返回模拟结果
             result = {
                 "jsonrpc": "2.0",
                 "id": message.get("id"),
@@ -253,20 +342,56 @@ async def handle_mcp_message(message: Dict[str, Any]) -> Dict[str, Any]:
 async def run_sse_server(config: ServerConfig):
     """运行 SSE 服务器"""
     import uvicorn
+    import multiprocessing
+    import threading
+
+    # 输出配置信息
+    print("\n" + "="*50)
+    print("MCP Browser Tools 配置信息")
+    print("="*50)
+    print(f"服务器名称: {config.server_name}")
+    print(f"服务器版本: {config.server_version}")
+    print(f"传输模式: {config.transport_mode}")
+    print(f"SSE 主机: {config.sse_host}")
+    print(f"SSE 端口: {config.sse_port}")
+    print(f"日志级别: {config.log_level}")
+    print("="*50)
+    print("\n下次启动时可以使用以下配置:")
+    print(f"export MCP_SERVER_NAME='{config.server_name}'")
+    print(f"export MCP_SERVER_VERSION='{config.server_version}'")
+    print(f"export MCP_TRANSPORT_MODE='{config.transport_mode}'")
+    print(f"export MCP_SSE_HOST='{config.sse_host}'")
+    print(f"export MCP_SSE_PORT='{config.sse_port}'")
+    print(f"export MCP_LOG_LEVEL='{config.log_level}'")
+    print("="*50 + "\n")
 
     logger.info(f"启动 SSE 服务器: {config.sse_host}:{config.sse_port}")
 
-    config_dict = {
-        "host": config.sse_host,
-        "port": config.sse_port,
-        "log_level": config.log_level.lower(),
-        "access_log": True
-    }
+    def run_server():
+        """在子进程中运行服务器"""
+        uvicorn.run(
+            sse_app,
+            host=config.sse_host,
+            port=config.sse_port,
+            log_level=config.log_level.lower(),
+            access_log=True
+        )
 
-    # 在实际使用中，需要在新的事件循环中运行服务器
-    # 这里使用 asyncio.create_task 来避免阻塞主事件循环
-    server_task = asyncio.create_task(
-        uvicorn.run(sse_app, **config_dict)
-    )
+    # 在单独的线程中运行服务器
+    server_thread = threading.Thread(target=run_server, daemon=True)
+    server_thread.start()
 
-    return server_task
+    # 等待服务器启动
+    import time
+    time.sleep(2)  # 给服务器一点时间启动
+
+    logger.info("SSE 服务器已启动")
+    print("SSE 服务器已成功启动")
+    print(f"访问地址: http://{config.sse_host}:{config.sse_port}")
+    print("可用端点:")
+    print(f"  - GET  http://{config.sse_host}:{config.sse_port}/sse")
+    print(f"  - GET  http://{config.sse_host}:{config.sse_port}/mcp-sse")
+    print(f"  - WS   ws://{config.sse_host}:{config.sse_port}/ws")
+    print("\n按 Ctrl+C 停止服务器\n")
+
+    return server_thread

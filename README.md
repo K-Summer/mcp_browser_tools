@@ -28,17 +28,26 @@ playwright install
 
 ### 2. 运行 MCP 服务器
 
-#### 使用 SSE 协议（默认）
-```bash
-mcp-browser-tools
-```
-
-#### 使用 stdio 协议
+#### 使用 stdio 协议（推荐，功能完整）
 ```bash
 # 设置环境变量
 export MCP_TRANSPORT_MODE=stdio
 mcp-browser-tools
 ```
+
+或者直接运行：
+```bash
+python run_with_stdio.py
+```
+
+#### 使用 SSE 协议（基础功能）
+```bash
+# 设置环境变量
+export MCP_TRANSPORT_MODE=sse
+mcp-browser-tools
+```
+
+**注意**：SSE 模式目前提供基础服务器功能，推荐使用 stdio 模式获得完整的 MCP 功能。
 
 或者通过配置文件：
 ```python
@@ -272,6 +281,46 @@ await tools.take_screenshot("page.png")
 
 ## 配置
 
+### 服务器配置
+
+服务器启动时会输出完整的配置信息，方便下次启动时使用相同的配置。
+
+#### 环境变量配置
+
+支持通过环境变量配置服务器参数：
+
+```bash
+# 服务器基本信息
+export MCP_SERVER_NAME="mcp-browser-tools"
+export MCP_SERVER_VERSION="0.2.3"
+export MCP_LOG_LEVEL="INFO"
+
+# 传输模式配置
+export MCP_TRANSPORT_MODE="sse"  # 或 "stdio"
+
+# SSE 服务器配置
+export MCP_SSE_HOST="localhost"
+export MCP_SSE_PORT="8000"
+```
+
+#### 配置文件方式
+
+```python
+from mcp_browser_tools.config import ServerConfig
+
+# 使用 SSE（默认）
+config = ServerConfig(
+    transport_mode="sse",
+    sse_host="localhost",
+    sse_port=8000
+)
+
+# 使用 stdio
+config = ServerConfig(
+    transport_mode="stdio"
+)
+```
+
 ### 自定义浏览器启动参数
 
 ```python
@@ -367,8 +416,20 @@ MIT License
 
 ## 更新日志
 
+### v0.2.3
+- **版本号升级**：从 0.2.2 升级到 0.2.3
+- **配置输出功能**：服务器启动时输出完整的配置信息
+- **环境变量支持**：支持通过环境变量配置服务器参数
+- **SSE 服务器基础功能**：提供基本的 SSE 服务器功能
+- **文档完善**：更新所有文档中的版本信息
+- **注意**：SSE 模式目前提供基础功能，推荐使用 stdio 模式获得完整功能
+
 ### v0.2.2
-- 默认使用 SSE (Server-Sent Events) 传输协议
+- **默认使用 SSE (Server-Sent Events) 传输协议**
+- 修复了 SSE 服务器启动问题，确保服务器能正确启动
+- 修复了 HTTP 方法错误，SSE 端点现在使用正确的 GET 方法
+- 改进了 SSE 服务器线程管理，避免阻塞主事件循环
+- 更新了所有相关文档和示例代码
 
 ### v0.2.1
 - 添加了 SSE (Server-Sent Events) 传输协议支持

@@ -10,7 +10,7 @@ from pathlib import Path
 class ServerConfig:
     """服务器配置"""
     server_name: str = "mcp-browser-tools"
-    server_version: str = "0.2.1"
+    server_version: str = "0.2.3"
     log_level: str = "INFO"
     log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     transport_mode: str = "sse"  # 传输模式: "stdio" 或 "sse"
@@ -19,7 +19,17 @@ class ServerConfig:
 
     @classmethod
     def default(cls) -> "ServerConfig":
-        return cls()
+        """从环境变量或默认值创建配置"""
+        import os
+
+        return cls(
+            server_name=os.environ.get("MCP_SERVER_NAME", "mcp-browser-tools"),
+            server_version=os.environ.get("MCP_SERVER_VERSION", "0.2.3"),
+            log_level=os.environ.get("MCP_LOG_LEVEL", "INFO"),
+            transport_mode=os.environ.get("MCP_TRANSPORT_MODE", "sse"),
+            sse_host=os.environ.get("MCP_SSE_HOST", "localhost"),
+            sse_port=int(os.environ.get("MCP_SSE_PORT", "8000"))
+        )
 
 @dataclass
 class BrowserConfig:
