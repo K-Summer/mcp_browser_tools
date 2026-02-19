@@ -9,8 +9,12 @@ MCP (Model Context Protocol) 浏览器自动化工具包，提供网页信息获
 - 🎯 **元素操作**：点击、填写表单等页面交互操作
 - ⏱️ **智能等待**：等待特定元素出现
 - 🔍 **信息提取**：提取页面中的链接、图片等结构化信息
-- 🔄 **双协议支持**：支持 stdio 和 SSE 两种传输协议
-- ⚡ **实时通信**：通过 SSE 实现服务器推送和双向通信
+- 📸 **截图功能**：截取页面截图
+- 💻 **JavaScript执行**：在页面中执行JavaScript代码
+- 🔄 **多协议支持**：支持 stdio、SSE 和 Streamable HTTP 三种传输协议
+- ⚡ **实时通信**：通过 SSE 和 HTTP Stream 实现服务器推送和双向通信
+- 🛡️ **安全验证**：输入验证和错误处理
+- 📊 **性能监控**：工具执行时间监控和日志记录
 
 ## 安装
 
@@ -28,41 +32,58 @@ playwright install
 
 ### 2. 运行 MCP 服务器
 
-#### 使用 stdio 协议（推荐，功能完整）
+#### 命令行方式
 ```bash
-# 设置环境变量
+# 显示帮助信息
+mcp-browser-tools --help
+
+# 使用 stdio 协议（推荐，功能完整）
+mcp-browser-tools --transport stdio
+
+# 使用 SSE 协议
+mcp-browser-tools --transport sse --host 127.0.0.1 --port 8000
+
+# 使用 HTTP Stream 协议
+mcp-browser-tools --transport http_stream --host 0.0.0.0 --port 8080
+
+# 设置日志级别
+mcp-browser-tools --transport stdio --log-level DEBUG
+
+# 列出所有可用的传输协议
+mcp-browser-tools --list-transports
+
+# 显示版本信息
+mcp-browser-tools --version
+```
+
+#### 环境变量方式
+```bash
+# 使用 stdio 协议
 export MCP_TRANSPORT_MODE=stdio
 mcp-browser-tools
-```
 
-或者直接运行：
-```bash
-python run_with_stdio.py
-```
-
-#### 使用 SSE 协议（基础功能）
-```bash
-# 设置环境变量
+# 使用 SSE 协议
 export MCP_TRANSPORT_MODE=sse
+export MCP_HOST=127.0.0.1
+export MCP_PORT=8000
+mcp-browser-tools
+
+# 使用 HTTP Stream 协议
+export MCP_TRANSPORT_MODE=http_stream
+export MCP_HOST=0.0.0.0
+export MCP_PORT=8080
 mcp-browser-tools
 ```
 
-**注意**：SSE 模式目前提供基础服务器功能，推荐使用 stdio 模式获得完整的 MCP 功能。
+#### Python 模块方式
+```bash
+# 直接运行模块
+python -m mcp_browser_tools --transport stdio
 
-或者通过配置文件：
-```python
-from mcp_browser_tools.config import ServerConfig
-
-# 使用 SSE（默认）
-config = ServerConfig(
-    transport_mode="sse",
-    sse_host="localhost",
-    sse_port=8000
-)
-
-# 使用 stdio
-config = ServerConfig(
-    transport_mode="stdio"
+# 使用不同的传输协议
+python -m mcp_browser_tools --transport sse --port 9000
+python -m mcp_browser_tools --transport http_stream --host localhost
+```
 )
 ```
 

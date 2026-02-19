@@ -1,7 +1,7 @@
 [project]
 name = "mcp-browser-tools"
-version = "0.2.3"
-description = "MCP服务器提供浏览器自动化功能，帮助AI模型获取网页信息"
+version = "0.3.0"
+description = "MCP服务器提供浏览器自动化功能，支持stdio、SSE和Streamable HTTP传输协议"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -12,6 +12,7 @@ dependencies = [
     "httpx>=0.25.0",
     "fastapi>=0.104.0",
     "uvicorn>=0.24.0",
+    "pydantic>=2.0.0",
 ]
 
 [project.optional-dependencies]
