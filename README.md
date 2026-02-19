@@ -33,13 +33,14 @@ mcp-browser-tools
 ### 3. 使用示例
 
 ```python
+import asyncio
 import json
 from mcp.server.stdio import stdio_server
-from mcp_browser_tools.server import server
+from mcp_browser_tools.server import main
 
 async def main():
     # MCP服务器会自动连接到stdio
-    await stdio_server(server)
+    await stdio_server(main)
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -113,6 +114,30 @@ if __name__ == "__main__":
   "arguments": {
     "selector": ".result-item",
     "timeout": 30
+  }
+}
+```
+
+### 7. execute_javascript
+执行 JavaScript 代码
+
+```json
+{
+  "name": "execute_javascript",
+  "arguments": {
+    "script": "return document.title"
+  }
+}
+```
+
+### 8. take_screenshot
+截取页面截图
+
+```json
+{
+  "name": "take_screenshot",
+  "arguments": {
+    "path": "screenshot.png"
   }
 }
 ```
@@ -255,6 +280,18 @@ MIT License
 欢迎提交 Issue 和 Pull Request！
 
 ## 更新日志
+
+### v0.2.1
+- 修复了入口点配置问题，解决了 uvx 命令的协程警告
+- 更新了依赖配置，将已弃用的 `tool.uv.dev-dependencies` 替换为 `dependency-groups.dev`
+- 改进了 UTF-8 编码支持，确保所有文件正确使用 UTF-8 编码
+
+### v0.2.0
+- 添加了完整的错误处理和重试机制
+- 改进了页面内容提取功能，支持自定义提取规则
+- 优化了浏览器性能和内存使用
+- 增加了详细的日志记录和调试信息
+- 完善了配置管理，支持自定义浏览器设置
 
 ### v0.1.0
 - 初始版本发布

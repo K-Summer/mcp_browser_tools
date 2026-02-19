@@ -1,6 +1,6 @@
 [project]
 name = "mcp-browser-tools"
-version = "0.1.0"
+version = "0.2.1"
 description = "MCP服务器提供浏览器自动化功能，帮助AI模型获取网页信息"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -25,11 +25,24 @@ dev = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[project.scripts]
-mcp-browser-tools = "mcp_browser_tools.server:main"
+[tool.hatch.build.targets.wheel]
+packages = ["mcp_browser_tools"]
 
-[tool.uv]
-dev-dependencies = [
+[tool.hatch.build.targets.sdist]
+packages = ["mcp_browser_tools"]
+
+[tool.hatch.version]
+path = "mcp_browser_tools/__init__.py"
+
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
+
+[project.scripts]
+mcp-browser-tools = "mcp_browser_tools.__main__:main"
+
+[dependency-groups]
+dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "black>=23.0.0",
