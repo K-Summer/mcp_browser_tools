@@ -84,8 +84,6 @@ python -m mcp_browser_tools --transport stdio
 python -m mcp_browser_tools --transport sse --port 9000
 python -m mcp_browser_tools --transport http_stream --host localhost
 ```
-)
-```
 
 ### 3. 使用示例
 
@@ -356,7 +354,7 @@ async with BrowserTools() as tools:
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage'
         ]
-    )
+)
 ```
 
 ### 设置用户代理
