@@ -525,7 +525,7 @@ async with BrowserTools() as tools:
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage'
         ]
-    )
+)
 ```
 
 ### 设置用户代理
