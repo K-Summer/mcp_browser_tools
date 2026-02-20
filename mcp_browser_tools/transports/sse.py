@@ -110,7 +110,8 @@ class SSETransport(TransportBase):
         # 配置默认值
         self.host = config.get("host", "127.0.0.1")
         self.port = config.get("port", 8000)
-        self.log_level = config.get("log_level", "info")
+        log_level = config.get("log_level", "info")
+        self.log_level = log_level.lower() if log_level else "info"
 
         # 设置路由
         self._setup_routes()
@@ -229,11 +230,11 @@ class SSETransport(TransportBase):
 
         # 输出启动信息
         print("\n" + "=" * 50)
-        print("🚀 MCP Browser Tools - SSE 模式")
+        print("MCP Browser Tools - SSE 模式")
         print("=" * 50)
-        print(f"📡 主机: {self.host}")
-        print(f"🔌 端口: {self.port}")
-        print("🌐 可用端点:")
+        print(f"主机: {self.host}")
+        print(f"端口: {self.port}")
+        print("可用端点:")
         print(f"  - GET  http://{self.host}:{self.port}/sse")
         print(f"  - GET  http://{self.host}:{self.port}/mcp-sse")
         print(f"  - WS   ws://{self.host}:{self.port}/ws")

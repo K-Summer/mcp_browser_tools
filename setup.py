@@ -13,32 +13,35 @@ if os.path.exists(readme_path):
 else:
     long_description = "MCP浏览器自动化工具包"
 
+
 # 读取 pyproject.toml 的依赖
 def get_dependencies():
     with open("pyproject.toml", "r", encoding="utf-8") as f:
         content = f.read()
 
     import re
+
     # 简单提取依赖，实际项目中建议使用 toml 库
-    deps_match = re.search(r'dependencies\s*=\s*\[(.*?)\]', content, re.DOTALL)
+    deps_match = re.search(r"dependencies\s*=\s*\[(.*?)\]", content, re.DOTALL)
     if deps_match:
         deps = []
-        for line in deps_match.group(1).split('\n'):
+        for line in deps_match.group(1).split("\n"):
             line = line.strip().strip('"').strip("'")
-            if line and not line.startswith('#'):
+            if line and not line.startswith("#"):
                 deps.append(line)
         return deps
     return []
 
+
 setup(
     name="mcp-browser-tools",
-    version="0.1.0",
-    description="MCP服务器提供浏览器自动化功能，帮助AI模型获取网页信息",
+    version="0.3.0",
+    description="MCP服务器提供浏览器自动化功能，支持stdio、SSE和Streamable HTTP传输协议",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Your Name",
     author_email="your.email@example.com",
-    url="https://github.com/yourusername/mcp-browser-tools",
+    url="https://github.com/K-Summer/mcp-browser-tools",
     packages=find_packages(),
     include_package_data=True,
     install_requires=get_dependencies(),
@@ -56,7 +59,7 @@ setup(
     keywords="mcp browser ai automation web scraping",
     entry_points={
         "console_scripts": [
-            "mcp-browser-tools=mcp_browser_tools.server:main",
+            "mcp-browser-tools=mcp_browser_tools.__main__:main",
         ],
     },
 )

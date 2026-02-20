@@ -15,11 +15,7 @@ publish.md
 test_*.py
 *_test.py
 simple_test.py
-test_server.py
-test_mcp_server.py
-test_server_functionality.py
 verify_server.py
 *.tmp
 *.log
-llm_test_final.py
-llm_test_simple.py
+llm_*.py

@@ -355,11 +355,11 @@ async def main():
 
     # 输出启动信息
     print("\n" + "=" * 50)
-    print("🚀 MCP Browser Tools 启动中...")
+    print("MCP Browser Tools 启动中...")
     print("=" * 50)
-    print(f"📦 版本: {config.server_version}")
-    print(f"📡 传输模式: {config.transport_mode.value}")
-    print(f"📊 日志级别: {config.log_level}")
+    print(f"版本: {config.server_version}")
+    print(f"传输模式: {config.transport_mode.value}")
+    print(f"日志级别: {config.log_level}")
     print("=" * 50)
 
     # 创建服务器
@@ -380,9 +380,9 @@ async def main():
             }
         )
     except KeyboardInterrupt:
-        print("\n\n👋 服务器正在停止...")
+        print("\n\n服务器正在停止...")
         await transport.stop()
-        print("✅ 服务器已停止")
+        print("服务器已停止")
     except Exception as e:
         logger.error(f"服务器运行失败: {e}")
         raise

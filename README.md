@@ -1,6 +1,13 @@
 # MCP Browser Tools
 
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI version](https://img.shields.io/pypi/v/mcp-browser-tools.svg)](https://pypi.org/project/mcp-browser-tools/)
+[![Build with uv](https://img.shields.io/badge/build-uv-orange.svg)](https://github.com/astral-sh/uv)
+
 MCP (Model Context Protocol) 浏览器自动化工具包，提供网页信息获取和浏览器操作功能，帮助AI模型与网页进行交互。
+
+支持三种传输协议：stdio、SSE (Server-Sent Events) 和 Streamable HTTP。
 
 ## 功能特性
 
@@ -18,11 +25,46 @@ MCP (Model Context Protocol) 浏览器自动化工具包，提供网页信息获
 
 ## 安装
 
+### 从 PyPI 安装
+
 ```bash
 pip install mcp-browser-tools
 ```
 
-## 快速开始
+### 从源码构建安装
+
+使用 [uv](https://github.com/astral-sh/uv) 构建和安装：
+
+```bash
+# 克隆仓库
+git clone https://github.com/K-Summer/mcp-browser-tools.git
+cd mcp-browser-tools
+
+# 使用 uv 构建
+uv build
+
+# 安装构建的包
+uv pip install dist/mcp_browser_tools-*.whl
+```
+
+### 开发安装
+
+```bash
+# 克隆仓库
+git clone https://github.com/K-Summer/mcp-browser-tools.git
+cd mcp_browser_tools
+
+# 创建虚拟环境并安装
+uv venv
+source .venv/bin/activate  # Linux/macOS
+# 或 .venv\Scripts\activate  # Windows
+
+# 安装开发依赖
+uv pip install -e .
+uv pip install -e ".[dev]"  # 安装开发依赖
+```
+
+## 🚀 快速开始
 
 ### 1. 安装 Playwright 浏览器
 
@@ -30,33 +72,47 @@ pip install mcp-browser-tools
 playwright install
 ```
 
-### 2. 运行 MCP 服务器
+### 2. 验证安装
 
-#### 命令行方式
 ```bash
-# 显示帮助信息
+# 检查版本
+mcp-browser-tools --version
+
+# 查看帮助
 mcp-browser-tools --help
 
-# 使用 stdio 协议（推荐，功能完整）
+# 列出支持的传输协议
+mcp-browser-tools --list-transports
+```
+
+### 3. 选择传输协议并启动服务器
+
+#### 传输协议选择指南
+
+| 协议            | 适用场景          | 优点                     | 缺点                      |
+| --------------- | ----------------- | ------------------------ | ------------------------- |
+| **stdio**       | CLI工具、本地开发 | 简单、稳定、功能完整     | 不支持远程连接            |
+| **SSE**         | Web应用、实时通信 | 支持服务器推送、HTTP兼容 | 单向通信（服务器→客户端） |
+| **HTTP Stream** | 流式API、长连接   | 双向通信、灵活           | 配置复杂                  |
+
+#### 启动服务器
+
+```bash
+# 使用 stdio 协议（推荐用于本地开发）
 mcp-browser-tools --transport stdio
 
-# 使用 SSE 协议
+# 使用 SSE 协议（推荐用于Web应用）
 mcp-browser-tools --transport sse --host 127.0.0.1 --port 8000
 
 # 使用 HTTP Stream 协议
 mcp-browser-tools --transport http_stream --host 0.0.0.0 --port 8080
 
-# 设置日志级别
-mcp-browser-tools --transport stdio --log-level DEBUG
-
-# 列出所有可用的传输协议
-mcp-browser-tools --list-transports
-
-# 显示版本信息
-mcp-browser-tools --version
+# 自定义配置
+mcp-browser-tools --transport sse --host localhost --port 9000 --log-level DEBUG --server-name "my-browser-tools"
 ```
 
 #### 环境变量方式
+
 ```bash
 # 使用 stdio 协议
 export MCP_TRANSPORT_MODE=stdio
@@ -76,6 +132,7 @@ mcp-browser-tools
 ```
 
 #### Python 模块方式
+
 ```bash
 # 直接运行模块
 python -m mcp_browser_tools --transport stdio
@@ -84,8 +141,57 @@ python -m mcp_browser_tools --transport stdio
 python -m mcp_browser_tools --transport sse --port 9000
 python -m mcp_browser_tools --transport http_stream --host localhost
 ```
-)
+
+### 4. 测试服务器连接
+
+#### 测试 SSE 服务器连接
+
+启动 SSE 服务器后，可以使用以下方法测试连接：
+
+```bash
+# 使用 curl 测试
+curl -N http://localhost:8000/sse
+
+# 使用 Python 测试
+python -c "
+import aiohttp
+import asyncio
+
+async def test():
+    async with aiohttp.ClientSession() as session:
+        async with session.get('http://localhost:8000/sse') as response:
+            print(f'状态码: {response.status}')
+            async for line in response.content:
+                print(line.decode().strip())
+                break
+
+asyncio.run(test())
+"
 ```
+
+#### 验证 MCP over SSE 端点
+
+```bash
+# 测试 MCP 端点
+curl -N http://localhost:8000/mcp-sse
+```
+
+#### 使用测试脚本
+
+项目包含测试脚本：
+
+```bash
+# 快速测试连接
+python quick_test.py
+
+# 完整测试
+python test_sse_connection.py
+
+# 检查服务器状态
+python check_server.py
+```
+
+````
 
 ### 3. 使用示例
 
@@ -101,12 +207,23 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-```
+````
 
-## 可用工具
+## 🛠️ 可用工具
 
-### 1. navigate_to_url
+MCP Browser Tools 提供以下浏览器自动化工具：
+
+### 导航和页面操作
+
+#### 1. navigate_to_url
+
 导航到指定URL
+
+**参数：**
+
+- `url` (string, 必需): 要导航到的URL
+
+**示例：**
 
 ```json
 {
@@ -117,7 +234,53 @@ if __name__ == "__main__":
 }
 ```
 
+#### 2. go_back
+
+返回上一页
+
+**参数：** 无
+
+**示例：**
+
+```json
+{
+  "name": "go_back",
+  "arguments": {}
+}
+```
+
+#### 3. go_forward
+
+前进到下一页
+
+**参数：** 无
+
+**示例：**
+
+```json
+{
+  "name": "go_forward",
+  "arguments": {}
+}
+```
+
+#### 4. refresh_page
+
+刷新当前页面
+
+**参数：** 无
+
+**示例：**
+
+```json
+{
+  "name": "refresh_page",
+  "arguments": {}
+}
+```
+
 ### 2. get_page_content
+
 获取当前页面内容
 
 ```json
@@ -128,6 +291,7 @@ if __name__ == "__main__":
 ```
 
 ### 3. get_page_title
+
 获取页面标题
 
 ```json
@@ -138,6 +302,7 @@ if __name__ == "__main__":
 ```
 
 ### 4. click_element
+
 点击页面元素
 
 ```json
@@ -150,6 +315,7 @@ if __name__ == "__main__":
 ```
 
 ### 5. fill_input
+
 填充输入框
 
 ```json
@@ -163,6 +329,7 @@ if __name__ == "__main__":
 ```
 
 ### 6. wait_for_element
+
 等待元素出现
 
 ```json
@@ -176,6 +343,7 @@ if __name__ == "__main__":
 ```
 
 ### 7. execute_javascript
+
 执行 JavaScript 代码
 
 ```json
@@ -188,6 +356,7 @@ if __name__ == "__main__":
 ```
 
 ### 8. take_screenshot
+
 截取页面截图
 
 ```json
@@ -373,9 +542,12 @@ tools.context = await tools.browser.new_context(
 
 ```json
 [
-  {"name": "navigate_to_url", "arguments": {"url": "https://news.ycombinator.com"}},
-  {"name": "get_page_content", "arguments": {}},
-  {"name": "get_page_title", "arguments": {}}
+  {
+    "name": "navigate_to_url",
+    "arguments": { "url": "https://news.ycombinator.com" }
+  },
+  { "name": "get_page_content", "arguments": {} },
+  { "name": "get_page_title", "arguments": {} }
 ]
 ```
 
@@ -383,10 +555,19 @@ tools.context = await tools.browser.new_context(
 
 ```json
 [
-  {"name": "navigate_to_url", "arguments": {"url": "https://example.com/login"}},
-  {"name": "fill_input", "arguments": {"selector": "#username", "text": "user"}},
-  {"name": "fill_input", "arguments": {"selector": "#password", "text": "pass"}},
-  {"name": "click_element", "arguments": {"selector": "#login-button"}}
+  {
+    "name": "navigate_to_url",
+    "arguments": { "url": "https://example.com/login" }
+  },
+  {
+    "name": "fill_input",
+    "arguments": { "selector": "#username", "text": "user" }
+  },
+  {
+    "name": "fill_input",
+    "arguments": { "selector": "#password", "text": "pass" }
+  },
+  { "name": "click_element", "arguments": { "selector": "#login-button" } }
 ]
 ```
 
@@ -394,9 +575,15 @@ tools.context = await tools.browser.new_context(
 
 ```json
 [
-  {"name": "navigate_to_url", "arguments": {"url": "https://dynamic-site.com"}},
-  {"name": "wait_for_element", "arguments": {"selector": ".dynamic-content", "timeout": 60}},
-  {"name": "get_page_content", "arguments": {}}
+  {
+    "name": "navigate_to_url",
+    "arguments": { "url": "https://dynamic-site.com" }
+  },
+  {
+    "name": "wait_for_element",
+    "arguments": { "selector": ".dynamic-content", "timeout": 60 }
+  },
+  { "name": "get_page_content", "arguments": {} }
 ]
 ```
 
@@ -438,6 +625,7 @@ MIT License
 ## 更新日志
 
 ### v0.2.3
+
 - **版本号升级**：从 0.2.2 升级到 0.2.3
 - **配置输出功能**：服务器启动时输出完整的配置信息
 - **环境变量支持**：支持通过环境变量配置服务器参数
@@ -446,6 +634,7 @@ MIT License
 - **注意**：SSE 模式目前提供基础功能，推荐使用 stdio 模式获得完整功能
 
 ### v0.2.2
+
 - **默认使用 SSE (Server-Sent Events) 传输协议**
 - 修复了 SSE 服务器启动问题，确保服务器能正确启动
 - 修复了 HTTP 方法错误，SSE 端点现在使用正确的 GET 方法
@@ -453,6 +642,7 @@ MIT License
 - 更新了所有相关文档和示例代码
 
 ### v0.2.1
+
 - 添加了 SSE (Server-Sent Events) 传输协议支持
 - 实现了双协议架构：stdio 和 SSE 两种传输模式
 - **默认使用 SSE 传输协议**，提供更好的实时通信体验
@@ -463,6 +653,7 @@ MIT License
 - 改进了 UTF-8 编码支持，确保所有文件正确使用 UTF-8 编码
 
 ### v0.2.0
+
 - 添加了完整的错误处理和重试机制
 - 改进了页面内容提取功能，支持自定义提取规则
 - 优化了浏览器性能和内存使用
@@ -470,6 +661,7 @@ MIT License
 - 完善了配置管理，支持自定义浏览器设置
 
 ### v0.1.0
+
 - 初始版本发布
 - 支持基本的浏览器操作功能
 - MCP 服务器实现
