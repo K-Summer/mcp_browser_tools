@@ -1,6 +1,6 @@
 [project]
 name = "mcp-browser-tools"
-version = "0.3.0"
+version = "0.3.1"
 description = "MCP服务器提供浏览器自动化功能，支持stdio、SSE和Streamable HTTP传输协议"
 readme = "README.md"
 requires-python = ">=3.12"

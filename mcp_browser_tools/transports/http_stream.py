@@ -31,19 +31,18 @@ class HTTPStreamMessageType(str, Enum):
 class HTTPStreamTransport(TransportBase):
     """Streamable HTTP 传输协议"""
 
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
         self.app = FastAPI(title="MCP Browser Tools HTTP Stream Server")
         self.server_thread: Optional[threading.Thread] = None
         self.mcp_server = None
-        self.request_queue = asyncio.Queue()
+        self.request_queue: asyncio.Queue = asyncio.Queue()
         self.response_queues: Dict[str, asyncio.Queue] = {}
 
-        # 配置默认值
-        self.host = config.get("host", "127.0.0.1")
-        self.port = config.get("port", 8001)
-        self.log_level = config.get("log_level", "info")
-        self.max_request_size = config.get("max_request_size", 1024 * 1024)  # 1MB
+        self.host = self.config.get("host", "127.0.0.1")
+        self.port = self.config.get("port", 8001)
+        self.log_level = self.config.get("log_level", "info")
+        self.max_request_size = self.config.get("max_request_size", 1024 * 1024)
 
         # 设置路由
         self._setup_routes()
@@ -78,7 +77,7 @@ class HTTPStreamTransport(TransportBase):
                 message["id"] = message_id
 
                 # 创建响应队列
-                response_queue = asyncio.Queue()
+                response_queue: asyncio.Queue = asyncio.Queue()
                 self.response_queues[message_id] = response_queue
 
                 # 将消息放入请求队列
@@ -165,7 +164,7 @@ class HTTPStreamTransport(TransportBase):
             return {
                 "status": "healthy",
                 "service": "mcp-browser-tools",
-                "version": "0.3.0",
+                "version": "0.3.1",
                 "transport": "http_stream",
                 "active_connections": len(self.response_queues)
             }
@@ -175,7 +174,7 @@ class HTTPStreamTransport(TransportBase):
             """服务器信息端点"""
             return {
                 "name": "mcp-browser-tools",
-                "version": "0.3.0",
+                "version": "0.3.1",
                 "protocol": "mcp",
                 "transport": "http_stream",
                 "capabilities": ["tools/list", "tools/call"],
@@ -265,106 +264,19 @@ class HTTPStreamTransport(TransportBase):
         self.is_running = False
         logger.info("HTTP Stream 传输协议已停止")
 
-    async def handle_message(self, message: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        处理消息
-
-        Args:
-            message: 输入消息
-
-        Returns:
-            Dict[str, Any]: 响应消息
-        """
-        try:
-            if self.mcp_server is None:
-                return {
-                    "jsonrpc": "2.0",
-                    "id": message.get("id"),
-                    "error": {
-                        "code": -32603,
-                        "message": "MCP 服务器未初始化"
-                    }
-                }
-
-            # 这里需要实现 MCP 消息处理逻辑
-            method = message.get("method")
-            params = message.get("params", {})
-
-            if method == "tools/list":
-                # 返回工具列表
-                return {
-                    "jsonrpc": "2.0",
-                    "id": message.get("id"),
-                    "result": {
-                        "tools": [
-                            {
-                                "name": "navigate_to_url",
-                                "description": "导航到指定URL",
-                                "inputSchema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "url": {"type": "string"}
-                                    },
-                                    "required": ["url"]
-                                }
-                            }
-                        ]
-                    }
-                }
-
-            elif method == "tools/call":
-                # 处理工具调用
-                tool_name = params.get("name")
-                arguments = params.get("arguments", {})
-
-                # 这里应该调用实际的工具函数
-                result = {
-                    "jsonrpc": "2.0",
-                    "id": message.get("id"),
-                    "result": {
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": f"工具 {tool_name} 调用成功，参数: {arguments}"
-                            }
-                        ]
-                    }
-                }
-
-                return result
-
-            elif method == "server/info":
-                # 返回服务器信息
-                return {
-                    "jsonrpc": "2.0",
-                    "id": message.get("id"),
-                    "result": {
-                        "name": "mcp-browser-tools",
-                        "version": "0.3.0",
-                        "capabilities": ["tools/list", "tools/call"]
-                    }
-                }
-
-            else:
-                return {
-                    "jsonrpc": "2.0",
-                    "id": message.get("id"),
-                    "error": {
-                        "code": -32601,
-                        "message": f"未知的 RPC 方法: {method}"
-                    }
-                }
-
-        except Exception as e:
-            logger.error(f"处理消息失败: {e}")
+    async def _handle_custom_method(self, method: str, params: Dict[str, Any], message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """处理 HTTP Stream 特有的方法"""
+        if method == "server/info":
             return {
                 "jsonrpc": "2.0",
                 "id": message.get("id"),
-                "error": {
-                    "code": -32603,
-                    "message": f"内部错误: {str(e)}"
+                "result": {
+                    "name": "mcp-browser-tools",
+                    "version": "0.3.1",
+                    "capabilities": ["tools/list", "tools/call"]
                 }
             }
+        return None
 
     def get_info(self) -> Dict[str, Any]:
         """获取传输协议信息"""

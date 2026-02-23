@@ -77,7 +77,7 @@ def parse_args():
         help="服务器名称 (默认: mcp-browser-tools)",
     )
     parser.add_argument(
-        "--server-version", type=str, default="0.3.0", help="服务器版本 (默认: 0.3.0)"
+        "--server-version", type=str, default="0.3.1", help="服务器版本 (默认: 0.3.1)"
     )
 
     # 其他命令

@@ -6,7 +6,7 @@ Stdio 传输协议
 import asyncio
 import json
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from mcp.server.stdio import stdio_server
 from .base import TransportBase
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class StdioTransport(TransportBase):
     """Stdio 传输协议"""
 
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
         self.read_stream = None
         self.write_stream = None

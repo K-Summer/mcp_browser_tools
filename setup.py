@@ -35,7 +35,7 @@ def get_dependencies():
 
 setup(
     name="mcp-browser-tools",
-    version="0.3.0",
+    version="0.3.1",
     description="MCP服务器提供浏览器自动化功能，支持stdio、SSE和Streamable HTTP传输协议",
     long_description=long_description,
     long_description_content_type="text/markdown",

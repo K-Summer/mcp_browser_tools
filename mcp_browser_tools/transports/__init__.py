@@ -4,7 +4,7 @@
 """
 
 from enum import Enum
-from typing import Type, Dict, Any
+from typing import Type, Dict, Any, Optional, Union
 
 from .base import TransportBase
 from .stdio import StdioTransport
@@ -19,15 +19,16 @@ class TransportMode(str, Enum):
     HTTP_STREAM = "http_stream"
 
 
-# 传输协议映射
-_TRANSPORT_MAP = {
+TransportClass = Union[Type[StdioTransport], Type[SSETransport], Type[HTTPStreamTransport]]
+
+_TRANSPORT_MAP: Dict[TransportMode, TransportClass] = {
     TransportMode.STDIO: StdioTransport,
     TransportMode.SSE: SSETransport,
     TransportMode.HTTP_STREAM: HTTPStreamTransport,
 }
 
 
-def create_transport(mode: TransportMode, config: Dict[str, Any] = None, **kwargs) -> TransportBase:
+def create_transport(mode: TransportMode, config: Optional[Dict[str, Any]] = None, **kwargs) -> TransportBase:
     """
     创建传输协议实例
 

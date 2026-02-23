@@ -8,10 +8,14 @@ wheels/
 
 # Virtual environments
 .venv
-publish.md
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
 
 # Test files and temporary files
-# Test files in root directory
 test_*.py
 *_test.py
 simple_test.py
@@ -19,3 +23,24 @@ verify_server.py
 *.tmp
 *.log
 llm_*.py
+
+# Backup files
+backup/
+
+# Example and demo files
+run_sse_example.py
+run_with_stdio.py
+sse_client_example.py
+check_server.py
+
+# Documentation (Chinese, local only)
+优化说明.md
+使用指南.md
+重构总结.md
+
+# Publish notes
+publish.md
+
+# Screenshot files
+*.png
+screenshot*

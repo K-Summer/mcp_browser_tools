@@ -4,7 +4,7 @@
 
 import re
 import json
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, List, Callable
 from urllib.parse import urlparse
 
 
@@ -189,19 +189,19 @@ def validate_tool_arguments(tool_name: str, arguments: Dict[str, Any]) -> Tuple[
     }
 
     if tool_name not in validation_rules:
-        return True, None  # 未知工具，不验证
+        return True, None
 
-    rules = validation_rules[tool_name]
+    rules: Dict[str, Any] = validation_rules[tool_name]
 
-    # 检查必需参数
-    for required_param in rules["required"]:
+    required_params: List[str] = rules["required"]
+    for required_param in required_params:
         if required_param not in arguments:
             return False, f"缺少必需参数: {required_param}"
 
-    # 验证参数
+    validators: Optional[Dict[str, Callable]] = rules.get("validators")
     for param_name, param_value in arguments.items():
-        if param_name in rules.get("validators", {}):
-            validator = rules["validators"][param_name]
+        if validators and param_name in validators:
+            validator = validators[param_name]
             is_valid, error_msg = validator(param_value)
             if not is_valid:
                 return False, f"参数 {param_name} 无效: {error_msg}"

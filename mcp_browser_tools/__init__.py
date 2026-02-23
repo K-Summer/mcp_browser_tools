@@ -5,7 +5,7 @@ MCP Browser Tools - 浏览器自动化工具包
 支持 stdio、SSE 和 Streamable HTTP 传输协议
 """
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 __author__ = "MCP Browser Tools"
 
 # 导出主要接口

@@ -100,17 +100,16 @@ class SSEConnectionManager:
 class SSETransport(TransportBase):
     """SSE 传输协议"""
 
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
         self.app = FastAPI(title="MCP Browser Tools SSE Server")
         self.connection_manager = SSEConnectionManager()
         self.server_thread: Optional[threading.Thread] = None
         self.mcp_server = None
 
-        # 配置默认值
-        self.host = config.get("host", "127.0.0.1")
-        self.port = config.get("port", 8000)
-        log_level = config.get("log_level", "info")
+        self.host = self.config.get("host", "127.0.0.1")
+        self.port = self.config.get("port", 8000)
+        log_level = self.config.get("log_level", "info")
         self.log_level = log_level.lower() if log_level else "info"
 
         # 设置路由
@@ -165,7 +164,7 @@ class SSETransport(TransportBase):
                     "method": "server/info",
                     "params": {
                         "name": "mcp-browser-tools",
-                        "version": "0.3.0"
+                        "version": "0.3.1"
                     }
                 }
                 yield f"data: {json.dumps(server_info)}\n\n"
@@ -271,96 +270,6 @@ class SSETransport(TransportBase):
         """停止 SSE 传输"""
         self.is_running = False
         logger.info("SSE 传输协议已停止")
-
-    async def handle_message(self, message: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        处理消息
-
-        Args:
-            message: 输入消息
-
-        Returns:
-            Dict[str, Any]: 响应消息
-        """
-        try:
-            if self.mcp_server is None:
-                return {
-                    "jsonrpc": "2.0",
-                    "id": message.get("id"),
-                    "error": {
-                        "code": -32603,
-                        "message": "MCP 服务器未初始化"
-                    }
-                }
-
-            # 这里需要实现 MCP 消息处理逻辑
-            # 由于 MCP 服务器期望 stdio 通信，这里需要适配
-            method = message.get("method")
-            params = message.get("params", {})
-
-            if method == "tools/list":
-                # 返回工具列表
-                return {
-                    "jsonrpc": "2.0",
-                    "id": message.get("id"),
-                    "result": {
-                        "tools": [
-                            {
-                                "name": "navigate_to_url",
-                                "description": "导航到指定URL",
-                                "inputSchema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "url": {"type": "string"}
-                                    },
-                                    "required": ["url"]
-                                }
-                            }
-                        ]
-                    }
-                }
-
-            elif method == "tools/call":
-                # 处理工具调用
-                tool_name = params.get("name")
-                arguments = params.get("arguments", {})
-
-                # 这里应该调用实际的工具函数
-                result = {
-                    "jsonrpc": "2.0",
-                    "id": message.get("id"),
-                    "result": {
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": f"工具 {tool_name} 调用成功，参数: {arguments}"
-                            }
-                        ]
-                    }
-                }
-
-                return result
-
-            else:
-                return {
-                    "jsonrpc": "2.0",
-                    "id": message.get("id"),
-                    "error": {
-                        "code": -32601,
-                        "message": f"未知的 RPC 方法: {method}"
-                    }
-                }
-
-        except Exception as e:
-            logger.error(f"处理消息失败: {e}")
-            return {
-                "jsonrpc": "2.0",
-                "id": message.get("id"),
-                "error": {
-                    "code": -32603,
-                    "message": f"内部错误: {str(e)}"
-                }
-            }
 
     def get_info(self) -> Dict[str, Any]:
         """获取传输协议信息"""

@@ -6,29 +6,15 @@ import asyncio
 import json
 import logging
 from typing import Dict, Any, Optional, List
-from dataclasses import dataclass
 from pathlib import Path
 
 from playwright.async_api import async_playwright, Page, Browser, BrowserContext
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 
+from ..config import BrowserConfig
+
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class BrowserConfig:
-    """浏览器配置"""
-    headless: bool = False
-    user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    timeout: int = 30000
-    wait_timeout: int = 30000
-    click_timeout: int = 5000
-    load_timeout: int = 10000
-
-    @classmethod
-    def default(cls) -> "BrowserConfig":
-        return cls()
 
 
 class BrowserTools:
@@ -50,6 +36,12 @@ class BrowserTools:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """异步上下文管理器出口"""
         await self.close_browser()
+
+    def _ensure_page(self) -> Page:
+        """确保 page 已初始化并返回"""
+        if self.page is None:
+            raise RuntimeError("浏览器页面未初始化，请先调用 start_browser()")
+        return self.page
 
     async def start_browser(self):
         """启动浏览器"""
@@ -88,15 +80,15 @@ class BrowserTools:
     async def navigate_to_url(self, url: str) -> Dict[str, Any]:
         """导航到指定URL"""
         await self.start_browser()
+        page = self._ensure_page()
 
         try:
             logger.info(f"导航到URL: {url}")
-            await self.page.goto(url, timeout=self.config.load_timeout, wait_until="networkidle")
-            await self.page.wait_for_load_state("networkidle")
+            await page.goto(url, timeout=self.config.load_timeout, wait_until="networkidle")
+            await page.wait_for_load_state("networkidle")
 
-            # 获取页面信息
-            title = await self.page.title()
-            current_url = self.page.url
+            title = await page.title()
+            current_url = page.url
 
             return {
                 "success": True,
@@ -115,48 +107,44 @@ class BrowserTools:
     async def get_page_content(self, max_length: int = 10000) -> Dict[str, Any]:
         """获取页面内容"""
         await self.start_browser()
+        page = self._ensure_page()
 
         try:
-            # 获取HTML内容
-            html = await self.page.content()
-
-            # 使用BeautifulSoup解析
+            html = await page.content()
             soup = BeautifulSoup(html, 'html.parser')
 
-            # 提取文本内容
             text = soup.get_text(separator=' ', strip=True)
             if len(text) > max_length:
                 text = text[:max_length] + "..."
 
-            # 提取链接
             links = []
             for a in soup.find_all('a', href=True):
                 href = a['href']
-                if href.startswith('http'):
+                if isinstance(href, str) and href.startswith('http'):
                     links.append({
                         "url": href,
                         "text": a.get_text(strip=True)[:100]
                     })
 
-            # 提取图片
             images = []
             for img in soup.find_all('img', src=True):
                 src = img['src']
                 alt = img.get('alt', '')
+                alt_str = str(alt)[:100] if alt else ''
                 images.append({
                     "src": src,
-                    "alt": alt[:100]
+                    "alt": alt_str
                 })
 
             return {
                 "success": True,
-                "title": await self.page.title(),
-                "url": self.page.url,
+                "title": await page.title(),
+                "url": page.url,
                 "text": text,
                 "links_count": len(links),
                 "images_count": len(images),
-                "links": links[:10],  # 只返回前10个链接
-                "images": images[:10]  # 只返回前10个图片
+                "links": links[:10],
+                "images": images[:10]
             }
         except Exception as e:
             logger.error(f"获取页面内容失败: {e}")
@@ -169,15 +157,17 @@ class BrowserTools:
     async def get_page_title(self) -> str:
         """获取页面标题"""
         await self.start_browser()
-        return await self.page.title()
+        page = self._ensure_page()
+        return await page.title()
 
     async def click_element(self, selector: str) -> Dict[str, Any]:
         """点击页面元素"""
         await self.start_browser()
+        page = self._ensure_page()
 
         try:
             logger.info(f"点击元素: {selector}")
-            await self.page.click(selector, timeout=self.config.click_timeout)
+            await page.click(selector, timeout=self.config.click_timeout)
 
             return {
                 "success": True,
@@ -196,10 +186,11 @@ class BrowserTools:
     async def fill_input(self, selector: str, text: str) -> Dict[str, Any]:
         """填充输入框"""
         await self.start_browser()
+        page = self._ensure_page()
 
         try:
             logger.info(f"填充输入框: {selector} -> {text}")
-            await self.page.fill(selector, text)
+            await page.fill(selector, text)
 
             return {
                 "success": True,
@@ -220,10 +211,11 @@ class BrowserTools:
     async def wait_for_element(self, selector: str, timeout: int = 30) -> Dict[str, Any]:
         """等待元素出现"""
         await self.start_browser()
+        page = self._ensure_page()
 
         try:
             logger.info(f"等待元素: {selector}, 超时: {timeout}秒")
-            await self.page.wait_for_selector(selector, timeout=timeout * 1000)
+            await page.wait_for_selector(selector, timeout=timeout * 1000)
 
             return {
                 "success": True,
@@ -244,10 +236,11 @@ class BrowserTools:
     async def take_screenshot(self, path: str = "screenshot.png") -> Dict[str, Any]:
         """截取页面截图"""
         await self.start_browser()
+        page = self._ensure_page()
 
         try:
             logger.info(f"截取截图: {path}")
-            await self.page.screenshot(path=path, full_page=True)
+            await page.screenshot(path=path, full_page=True)
 
             return {
                 "success": True,
@@ -266,10 +259,11 @@ class BrowserTools:
     async def execute_javascript(self, script: str) -> Dict[str, Any]:
         """执行JavaScript代码"""
         await self.start_browser()
+        page = self._ensure_page()
 
         try:
             logger.info(f"执行JavaScript: {script[:100]}...")
-            result = await self.page.evaluate(script)
+            result = await page.evaluate(script)
 
             return {
                 "success": True,
@@ -289,10 +283,11 @@ class BrowserTools:
     async def get_element_text(self, selector: str) -> Dict[str, Any]:
         """获取元素文本内容"""
         await self.start_browser()
+        page = self._ensure_page()
 
         try:
             logger.info(f"获取元素文本: {selector}")
-            text = await self.page.text_content(selector)
+            text = await page.text_content(selector)
 
             return {
                 "success": True,
@@ -312,10 +307,11 @@ class BrowserTools:
     async def get_element_attribute(self, selector: str, attribute: str) -> Dict[str, Any]:
         """获取元素属性"""
         await self.start_browser()
+        page = self._ensure_page()
 
         try:
             logger.info(f"获取元素属性: {selector}.{attribute}")
-            value = await self.page.get_attribute(selector, attribute)
+            value = await page.get_attribute(selector, attribute)
 
             return {
                 "success": True,
@@ -337,15 +333,17 @@ class BrowserTools:
     async def get_current_url(self) -> str:
         """获取当前URL"""
         await self.start_browser()
-        return self.page.url
+        page = self._ensure_page()
+        return page.url
 
     async def reload_page(self) -> Dict[str, Any]:
         """重新加载页面"""
         await self.start_browser()
+        page = self._ensure_page()
 
         try:
             logger.info("重新加载页面")
-            await self.page.reload(wait_until="networkidle")
+            await page.reload(wait_until="networkidle")
 
             return {
                 "success": True,
@@ -362,10 +360,11 @@ class BrowserTools:
     async def go_back(self) -> Dict[str, Any]:
         """返回上一页"""
         await self.start_browser()
+        page = self._ensure_page()
 
         try:
             logger.info("返回上一页")
-            await self.page.go_back(wait_until="networkidle")
+            await page.go_back(wait_until="networkidle")
 
             return {
                 "success": True,
@@ -382,10 +381,11 @@ class BrowserTools:
     async def go_forward(self) -> Dict[str, Any]:
         """前进到下一页"""
         await self.start_browser()
+        page = self._ensure_page()
 
         try:
             logger.info("前进到下一页")
-            await self.page.go_forward(wait_until="networkidle")
+            await page.go_forward(wait_until="networkidle")
 
             return {
                 "success": True,

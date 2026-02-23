@@ -15,7 +15,7 @@ from .transports import TransportMode
 class ServerConfig:
     """服务器配置"""
     server_name: str = "mcp-browser-tools"
-    server_version: str = "0.3.0"
+    server_version: str = "0.3.1"
     log_level: str = "INFO"
     log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     transport_mode: TransportMode = TransportMode.STDIO
@@ -56,7 +56,7 @@ class ServerConfig:
 
         return cls(
             server_name=os.environ.get("MCP_SERVER_NAME", "mcp-browser-tools"),
-            server_version=os.environ.get("MCP_SERVER_VERSION", "0.3.0"),
+            server_version=os.environ.get("MCP_SERVER_VERSION", "0.3.1"),
             log_level=os.environ.get("MCP_LOG_LEVEL", "INFO"),
             transport_mode=transport_mode,
             data_dir=os.environ.get("MCP_DATA_DIR", "~/.mcp-browser-tools"),
